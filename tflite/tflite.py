@@ -11,7 +11,7 @@ import os
 os.system("cls")
 # Path untuk model dan video
 pathModel = "/home/pandu/Documents/handwashing/model/tflite/handwashing.tflite"
-# pathVideo = "/home/pandu/Documents/eksperimen/video/s_cuci_tangan11.mp4"
+pathVideo = "/home/pandu/Documents/handwashing/video/s_cuci_tangan11.mp4"
 
 # deklarasi variable tensorflow lite dan load model
 interpreter = tf.lite.Interpreter(model_path=pathModel)
@@ -27,8 +27,7 @@ labels = ['0', '1', '2', '3', '4', '5', '6', '7']
 
 # Membaca video atau webcam
 # Untuk menggunakan webcam rubah parameter ke 0
-cap = cv2.VideoCapture(
-    "/home/pandu/Documents/handwashing/video/s_cuci_tangan11.mp4")
+cap = cv2.VideoCapture(pathVideo)
 
 
 # Tampilan GUI
