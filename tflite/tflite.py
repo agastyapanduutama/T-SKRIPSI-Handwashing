@@ -4,10 +4,14 @@ import tensorflow as tf
 import cv2
 import time
 from keras.preprocessing import image
+from tkinter import *
+from PIL import Image, ImageTk
+import os
 
+os.system("cls")
 # Path untuk model dan video
-pathModel = "/home/pandu/Documents/eksperimen/model/content/content/tflite_models/flowers.tflite"
-pathVideo = "/home/pandu/Documents/eksperimen/video/s_cuci_tangan11.mp4"
+pathModel = "/home/pandu/Documents/handwashing/model/tflite/handwashing.tflite"
+# pathVideo = "/home/pandu/Documents/eksperimen/video/s_cuci_tangan11.mp4"
 
 # deklarasi variable tensorflow lite dan load model
 interpreter = tf.lite.Interpreter(model_path=pathModel)
@@ -19,11 +23,39 @@ output_details = interpreter.get_output_details()
 pTime = 0
 
 # Membuat label yang akan di prediksi sesuai nilianya
-labels = ['1', '2', '3', '4', '5', '6', '7']
+labels = ['0', '1', '2', '3', '4', '5', '6', '7']
 
 # Membaca video atau webcam
 # Untuk menggunakan webcam rubah parameter ke 0
-cap = cv2.VideoCapture(pathVideo)
+cap = cv2.VideoCapture(
+    "/home/pandu/Documents/handwashing/video/s_cuci_tangan11.mp4")
+
+
+# Tampilan GUI
+window = Tk()
+window.title('Evaluasi Cuci Tangan')
+
+# Kolom Kiri
+leftFrame = Frame(window, width=200, height=200)
+leftFrame.grid(row=0, column=0, padx=10, pady=2)
+
+
+def text(nilai):
+    for item in range(6):
+        if nilai == item:
+            color = "green"
+        else:
+            color = "black"
+
+        item += 1
+        Instruct = Label(leftFrame, fg=color, text="gerakan : " + str(item))
+        Instruct.grid(row=item, column=0, padx=10, pady=2)
+
+
+# Kolom kanan
+video = Label(window, width=200, height=200)
+video.grid(row=0, column=1, padx=10, pady=2)
+# End GUI
 
 
 def classification(channelRColor):
@@ -41,6 +73,8 @@ def classification(channelRColor):
     output_data = interpreter.get_tensor(output_details[0]['index'])
     print("Tingkat Akurasi : " + str(np.max(np.unique(output_data))))
     print("Label Terdeteksi :" + str(labels[np.argmax(output_data)]))
+    nilai = (np.argmax(output_data))
+    text(nilai)
     # End Prediksi gambar #
 
 
@@ -52,7 +86,12 @@ while True:
     # Me resize image ke 224*224 kembali ke ukuran model
     inFrame = cv2.resize(frame, (150, 150))
     # inFrame = frame
-    cv2.imshow("frame", frame)
+    # cv2.imshow("frame", frame)
+
+    cv2image = cv2.cvtColor(inFrame, cv2.COLOR_BGR2RGBA)
+    img = Image.fromarray(cv2image)
+    imgtk = ImageTk.PhotoImage(image=img)
+    video.config(image=imgtk)
 
     # Split warna pada video
     b, g, r = cv2.split(inFrame)
@@ -65,6 +104,7 @@ while True:
     channelRColor = cv2.merge([frameR, frameR, frameR])
 
     classification(channelRColor)
+    window.update()
 
     # Menampilkan FPS
     cTime = time.time()
@@ -74,6 +114,7 @@ while True:
 
     if cv2.waitKey(25) == ord('q'):
         break
+
 
 cap.release()
 cv2.destroyAllWindows()
