@@ -7,5 +7,6 @@ Library yang mungkin diperlukan
 - OpenCV
 - Tensorflow 
 
+Paper : https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9298612
 
 Catatan : Project ini belum sepenuhnya sempurna namun jika anda menemukan bug atau error anda bisa menghubungi saya melalui Email
