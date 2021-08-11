@@ -1,17 +1,30 @@
-# Memasukan Library yang diperlukan
-import numpy as np
-import tensorflow as tf
-import cv2
-import time
-from keras.preprocessing import image
-from tkinter import *
-from PIL import Image, ImageTk
-import os
+######## Analisis Gerakan Evluasi Cuci Tangan #########
+#
+# Author: Agastya Pandu Satriya Utama, Dr. Esa Prakasa M.T.
+# Deskripsi: 
+# Program ini menggunakan Tensorflow lite untuk Mengklasifikasi gerakan Cuci Tangan Menggunakan Algoritma CNN
+# untuk mengevaluasi hasil dari Gerakan Cuci Tangan, melalui Video
+# 
+# Saya memodifikasi dan mengembangkannya lebih lanjut
 
-os.system("cls")
+# Memasukan Library yang diperlukan
+try:
+    import numpy as np
+    import tensorflow as tf
+    import cv2
+    import time
+    from keras.preprocessing import image
+    from tkinter import *
+    from PIL import Image, ImageTk
+    import os
+except:
+    print("beberapa lIbrary Tidak ditemukan")
+
+os.system("clear")
+
 # Path untuk model dan video
-pathModel = "/home/pandu/Documents/handwashing/model/tflite/handwashing.tflite"
-pathVideo = "/home/pandu/Documents/handwashing/video/s_cuci_tangan11.mp4"
+pathModel = "C:\\Users\\Pandu\\Documents\\python\\handwashing\\model\\handwashing.tflite"
+pathVideo = "C:\\Users\\Pandu\\Documents\\python\\handwashing\\video\\s_cuci_tangan11.mp4"
 
 # deklarasi variable tensorflow lite dan load model
 interpreter = tf.lite.Interpreter(model_path=pathModel)
@@ -19,16 +32,67 @@ interpreter = tf.lite.Interpreter(model_path=pathModel)
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
-# Untuk menampilkan FPS
-pTime = 0
+# Membaca video atau webcam # Untuk menggunakan webcam rubah parameter ke 0
+# Referensi https://docs.opencv.org/4.5.2/dd/d43/tutorial_py_video_display.html
+cap = cv2.VideoCapture(pathVideo)
 
 # Membuat label yang akan di prediksi sesuai nilianya
 labels = ['0', '1', '2', '3', '4', '5', '6', '7']
 
-# Membaca video atau webcam
-# Untuk menggunakan webcam rubah parameter ke 0
-cap = cv2.VideoCapture(pathVideo)
+# Untuk menampilkan FPS
+pTime = 0
 
+gerakan = np.zeros(7, dtype=int)
+totalFrames = 0
+
+# Hasil Evaluasi Cuci Tangan
+def summariseTheResult(poseCount, totalFrames):
+  jendela = Tk()
+  jendela.title('Hasil Evaluasi Cuci Tangan')
+  jendela.geometry("600x300+300+300")
+
+  detikPerFrame = 1/15
+  gerakanPctAcc = 0
+  gerakanDurasiAcc = 0
+  totalPresentasi = 0
+
+  for idx in range(6):
+    poseDuration = poseCount[idx]*detikPerFrame
+    posePct = (poseCount[idx]/totalFrames)*100
+
+    idxStr = "{:2d}".format(idx)
+
+    # Jika gerakan lebih dari 5 detik maka gerakan dianggap bagus
+    if poseDuration >= 5:
+      textColour = "black"
+    else:
+      textColour = "red"
+
+    text = ("Gerakan %s: Dilakukan selama : %3.2f detik | Persentasi : %3.2f %% \n") % (
+        idxStr, poseDuration, posePct)
+    lb0 = Label(jendela, text=text, fg=textColour, font=("Helvetica", 12))
+    yPost = 20 + idx*25
+    lb0.place(x=20, y=yPost)
+
+    gerakanDurasiAcc = gerakanDurasiAcc + poseDuration
+    gerakanPctAcc = gerakanPctAcc + posePct
+    totalPresentasi = totalPresentasi + posePct
+
+  gerakanPctAcc = round(gerakanPctAcc)
+
+  if gerakanDurasiAcc >= 40:
+      textColour = "black"
+      # text = ("Durasi Cuci Tangan: %3.2f  sec | Persentasi : %3.2f %% \n dilakukan dengan benar") % (gerakanDurasiAcc, gerakanPctAcc)
+      text = ("Durasi Cuci Tangan: %3.2f  sec |  dilakukan dengan benar | Persentasi %3.2f %%" ) % (
+          gerakanDurasiAcc, totalPresentasi)
+  elif gerakanDurasiAcc < 40:
+      textColour = "red"
+      text = ("Durasi Cuci Tangan: %3.2f  sec |  dilakukan teralu Singkat Minimal 40 Detik \n") % (gerakanDurasiAcc)
+
+  lb0 = Label(jendela, text=text, fg=textColour, font=("Helvetica", 12))
+  yPost = 35 + yPost
+  lb0.place(x=20, y=yPost)
+  jendela.mainloop()
 
 # Tampilan GUI
 window = Tk()
@@ -38,20 +102,33 @@ window.title('Evaluasi Cuci Tangan')
 leftFrame = Frame(window, width=200, height=200)
 leftFrame.grid(row=0, column=0, padx=10, pady=2)
 
+# Put text in opencv
+def textCv(nilai, gerakan):
 
-def text(nilai):
+    totalDurasiGerakan = 0
+    secondPerFrame = 1/15
+
     for item in range(6):
+
         if nilai == item:
-            color = "green"
+            color = 9,255,0
         else:
-            color = "black"
+            color = 0,0,0
+        
+        durasiGerakan = gerakan[item]*secondPerFrame
+        yPost = 20 + item*25
+        durasi = round(durasiGerakan)
+        cv2.putText(frame1, "gerakan ke: {}, Durasi : {}".format(item, durasi),(20, yPost), cv2.FONT_HERSHEY_PLAIN, 1, (color), 0)
+        # cv2.putText(frame1, "sample",(20, yPost), cv2.FONT_HERSHEY_PLAIN, 1, (9,255,0), 0)
+        totalDurasiGerakan = totalDurasiGerakan + durasiGerakan
 
-        item += 1
-        Instruct = Label(leftFrame, fg=color, text="gerakan : " + str(item))
-        Instruct.grid(row=item, column=0, padx=10, pady=2)
+    cv2.putText(frame1, "Total Durasi Gerakan: {}".format(totalDurasiGerakan),(20, 200), cv2.FONT_HERSHEY_PLAIN, 1, (color), 0)
 
+# Kolom Kiri GUI
+labelGerakan = Label(window, width=250, height=250)
+labelGerakan.grid(row=0, column=0, padx=10, pady=2)
 
-# Kolom kanan
+# Kolom kanan GUI
 video = Label(window, width=200, height=200)
 video.grid(row=0, column=1, padx=10, pady=2)
 # End GUI
@@ -73,47 +150,78 @@ def classification(channelRColor):
     print("Tingkat Akurasi : " + str(np.max(np.unique(output_data))))
     print("Label Terdeteksi :" + str(labels[np.argmax(output_data)]))
     nilai = (np.argmax(output_data))
-    text(nilai)
+    hasil = np.array(list(str(nilai),), dtype=int)
+    gerakan[hasil[0]] = gerakan[hasil[0]] + 1
+    return nilai, gerakan
     # End Prediksi gambar #
 
+# Jika tidak ada gerakan maka nilai akan bertambah dan akan menampilkan summary
+noAction = 0
 
 while True:
-    # Membaca video
-    ret, frame = cap.read()
-    # Rotasikan gambar sesuai dengan rekomendasi dari kanan
-    # frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
-    # Me resize image ke 224*224 kembali ke ukuran model
-    inFrame = cv2.resize(frame, (150, 150))
-    # inFrame = frame
-    # cv2.imshow("frame", frame)
+    try:
+        # Membaca video
+        ret, frame = cap.read()
+        # Rotasikan gambar sesuai dengan rekomendasi dari kanan
+        frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+        # Me resize image ke 224*224 kembali ke ukuran model
+        inFrame = cv2.resize(frame, (150, 150))
 
-    cv2image = cv2.cvtColor(inFrame, cv2.COLOR_BGR2RGBA)
-    img = Image.fromarray(cv2image)
-    imgtk = ImageTk.PhotoImage(image=img)
-    video.config(image=imgtk)
+        # Memasukan Video ke GUI Tkinter
+        cv2image = cv2.cvtColor(inFrame, cv2.COLOR_BGR2RGBA)
+        img = Image.fromarray(cv2image)
+        imgtk = ImageTk.PhotoImage(image=img)
+        video.config(image=imgtk)
 
-    # Split warna pada video
-    b, g, r = cv2.split(inFrame)
-    # Meng treshold gambar atau merubah ke biner
-    retR, tholdR = cv2.threshold(r, 50, 255, cv2.THRESH_BINARY)
-    # Mengambil hasil treshold dan memasukannya ke array
-    frameR = np.array(tholdR)
+        # Prediksi Gerakan
+        # Pisah warna pada video
+        b, g, r = cv2.split(inFrame)
+        # Meng treshold gambar atau merubah ke biner
+        retR, tholdR = cv2.threshold(r, 50, 255, cv2.THRESH_BINARY)
+        # Mengambil hasil treshold dan memasukannya ke array
+        frameR = np.array(tholdR)
+        # Merge channel Red
+        channelRColor = cv2.merge([frameR, frameR, frameR])
+        nilai, gerakan = classification(channelRColor)
+        # End Prediksi Gerakan
 
-    # Mengambil channel Red
-    channelRColor = cv2.merge([frameR, frameR, frameR])
+        # Jika tidak ada gerakan
+        if nilai == 6:
+            noAction += 1
+            if noAction == 30:
+                break
+        else:
+            noAction = 0
 
-    classification(channelRColor)
-    window.update()
+        # Membuat Box Label Gerakan
+        img = cv2.imread(
+            "C:\\Users\\Pandu\\Documents\\python\\handwashing\\image\\abu.png", cv2.IMREAD_COLOR)
+        frameNa = cv2.resize(img, (250, 250))
+        frame1 = frameNa
 
-    # Menampilkan FPS
-    cTime = time.time()
-    fps = 1 / (cTime - pTime)
-    pTime = cTime
-    print("fps :" + str(fps))
+        textCv(nilai, gerakan)
 
-    if cv2.waitKey(25) == ord('q'):
+        cv2imageNa = cv2.cvtColor(frame1, cv2.COLOR_BGR2RGBA)
+        imgNa = Image.fromarray(cv2imageNa)
+        imgtkNa = ImageTk.PhotoImage(image=imgNa)
+        labelGerakan.config(image=imgtkNa)
+
+        window.update()
+
+        # Menampilkan FPS
+        cTime = time.time()
+        fps = 1 / (cTime - pTime)
+        pTime = cTime
+        print("fps :" + str(fps))
+
+        totalFrames += 1
+
+    except cv2.error as e:
         break
 
 
 cap.release()
 cv2.destroyAllWindows()
+window.destroy()
+# Tampilkan Hasil Evaluasi
+summariseTheResult(gerakan, totalFrames)
