@@ -8,7 +8,6 @@ from keras.preprocessing import image
 
 model = load_model("/home/pandu/Documents/handwashing/model/16jun21.h5")
 os.system("clear")
-
 # videoPath = "/home/pandu/Documents/eksperimen/video/"
 # videoFile = "s_cuci_tangan11.mp4"
 
